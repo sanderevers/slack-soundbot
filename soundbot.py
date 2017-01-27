@@ -14,7 +14,7 @@ def playsound(sound):
 
 def list_files():
     all_files = os.listdir('.')
-    mp3s = [parts[0] for file in all_files for parts in [file.split('.')] if parts[1]=='mp3']
+    mp3s = [parts[0] for file in all_files for parts in [file.split('.')] if parts[-1]=='mp3']
     mp3s.sort()
     return ' '.join(mp3s)
 
