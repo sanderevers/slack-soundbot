@@ -10,7 +10,10 @@ def handle_cmd(cmd):
         playsound(cmd)
 
 def playsound(sound):
-    subprocess.call([config.play_cmd,"{0}.mp3".format(sound)])
+    try:
+        subprocess.call([config.play_cmd,"{0}.mp3".format(sound)])
+    except:
+        pass
 
 def list_files():
     all_files = os.listdir('.')
