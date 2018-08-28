@@ -1,4 +1,4 @@
-from asyncio import CancelledError
+from asyncio import CancelledError, Queue
 from slacksocket import SlackSocket
 from .thread import async_run_in_daemon_thread
 
@@ -9,12 +9,22 @@ import asyncio
 import janus
 import contextlib
 
-class AiterQueue(asyncio.queues.Queue):
-    def __aiter__(self):
-        return self
-    async def __anext__(self):
-        return await self.get()
+class DQueue(Queue):
+    def putfront_nowait(self, item):
+        """Put an item into the queue without blocking.
 
+        If no free slot is immediately available, raise QueueFull.
+        """
+        if self.full():
+            raise QueueFull
+        self._queue.appendleft(item)
+        self._unfinished_tasks += 1
+        self._finished.clear()
+        self._wakeup_next(self._getters)
+
+async def aiter(queue):
+    while True:
+        yield await queue.get()
 
 def list_files():
     all_files = os.listdir('./mp3s')
@@ -24,44 +34,72 @@ def list_files():
 
 def process_events_sync(socket,jq):
     for event in socket.events():
-        if event.event.get('channel')==Config.slack_channel\
-                and event.event.get('type')=='message'\
-                and event.event.get('user')!='soundbot':
-            log.debug('received: ' + event.json)
-            jq.put(event.event.get('text'))
+        jq.put(event)
+        log.debug('received: ' + event.json)
 
-class Player:
+
+def is_relevant_message(event):
+    return event.event.get('channel')==Config.slack_channel\
+            and event.event.get('type')=='message'\
+            and event.event.get('user')!='soundbot'
+
+def text(event):
+    return event.event.get('text')
+
+class PlayRun:
+    def __init__(self, filename):
+        self.process = None
+        self.filename = filename
+
+    async def start(self):
+        self.process = await asyncio.create_subprocess_exec(Config.play_cmd, self.filename)
+        asyncio.ensure_future(self.wait())
+
+    async def wait(self):
+        if self.process:
+            ret = await self.process.wait()
+            self.process = None
+            log.debug('wait ended in {}'.format(ret))
+            return ret
+
+    async def stop(self):
+        if self.process:
+            self.process.terminate()
+            self.process = None
+
+
+class PlayQ:
     def __init__(self):
-        self.q = AiterQueue()
-        self.task = asyncio.ensure_future(self.run())
+        self.q = DQueue()
+        self.playrun = PlayRun(None)
+        asyncio.ensure_future(self.run())
 
     async def append(self, sound):
         await self.q.put(sound)
 
-    def skip(self):
-        self.task.cancel()
+    async def prepend(self, sound):
+        self.q.putfront_nowait(sound)
+
+    async def skip(self):
+        await self.playrun.stop()
 
     async def run(self):
-        while True:
-            with contextlib.suppress(CancelledError):
-                async for sound in self.q:
-                    try:
-                        log.debug('playing {}'.format(sound))
-                        process = await asyncio.create_subprocess_exec(Config.play_cmd, "mp3s/{0}.mp3".format(sound))
-                    except:
-                        pass
-                    try:
-                        await process.wait()
-                        log.debug("{} played".format(sound))
-                    except CancelledError:
-                        process.terminate()
+        async for sound in aiter(self.q):
+            try:
+                log.debug('playing {}'.format(sound))
+                self.playrun = PlayRun("mp3s/{0}.mp3".format(sound))
+                await self.playrun.start()
+                await self.playrun.wait()
+                log.debug("{} played".format(sound))
+            except:
+                pass
 
 
 class Bot:
     def __init__(self):
         self.socket = SlackSocket(Config.api_key, translate=True)
-        self.fore = Player()
-        self.back = Player()
+        self.fore = PlayQ()
+        self.back = PlayQ()
 
     def run(self):
         cmdq = janus.Queue()
@@ -69,15 +107,16 @@ class Bot:
         asyncio.get_event_loop().run_until_complete(self.consume_cmd_q(cmdq.async_q))
 
     async def consume_cmd_q(self,async_q):
-        while True:
-            cmd = await async_q.get()
+        async for cmd in (text(ev) async for ev in aiter(async_q) if is_relevant_message(ev)):
             log.debug('consuming {}'.format(cmd))
             if cmd in ('ls', 'list'):
                 asyncio.ensure_future(async_run_in_daemon_thread(self.socket.send_msg,list_files(),channel_name=Config.slack_channel,confirm=False))
-            elif cmd == 'stop':
-                self.fore.skip()
-            elif cmd == '!stop':
-                self.back.skip()
+            elif cmd == 'mand':
+                await self.fore.prepend('mand')
+                await self.fore.skip()
+            elif cmd == '!mand':
+                await self.back.prepend('mand')
+                await self.back.skip()
             elif cmd.startswith('!'):
                 await self.back.append(cmd[1:])
             else:

@@ -2,6 +2,8 @@ import os
 import sys
 import logging
 import yaml
+import asyncio
+import warnings
 
 from .soundbot import Bot
 from .config import Config
@@ -21,10 +23,15 @@ def main():
         read_config(sys.argv[1])
     elif os.path.exists(default_config_file):
         read_config(default_config_file)
+
+    log = logging.getLogger(__package__)
+    if Config.debug:
+        logging.basicConfig(level=logging.DEBUG)
+        asyncio.get_event_loop().set_debug(True)
+        warnings.simplefilter("always", ResourceWarning)
+
     Bot().run()
 
 
-log = logging.getLogger(__package__)
-logging.basicConfig(level=logging.DEBUG)
 if __name__=='__main__':
     main()
