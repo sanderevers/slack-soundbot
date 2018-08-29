@@ -24,7 +24,6 @@ def main():
     elif os.path.exists(default_config_file):
         read_config(default_config_file)
 
-    log = logging.getLogger(__package__)
     if Config.debug:
         logging.basicConfig(level=logging.DEBUG)
         asyncio.get_event_loop().set_debug(True)
@@ -32,6 +31,6 @@ def main():
 
     Bot().run()
 
-
+log = logging.getLogger(__package__)
 if __name__=='__main__':
     main()
