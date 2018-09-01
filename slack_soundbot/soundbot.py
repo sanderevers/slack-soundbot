@@ -151,13 +151,13 @@ class Bot:
         self.socket = SlackSocket(Config.api_key, translate=True)
         self.fore = PlayQ()
         self.back = PlayQ()
-
-    def run(self):
-        inq = janus.Queue()
         self.outq = janus.Queue()
-        asyncio.ensure_future(async_run_in_daemon_thread(process_inq_sync, self.socket, inq.sync_q))
+        self.inq = janus.Queue()
+
+    async def run(self):
+        asyncio.ensure_future(async_run_in_daemon_thread(process_inq_sync, self.socket, self.inq.sync_q))
         asyncio.ensure_future(async_run_in_daemon_thread(process_outq_sync, self.socket, self.outq.sync_q))
-        asyncio.get_event_loop().run_until_complete(self.consume_cmd_q(inq.async_q))
+        await self.consume_cmd_q(self.inq.async_q)
 
     async def send(self,event):
         # if event is a string, sends a simple message over the web socket
@@ -171,7 +171,7 @@ class Bot:
                 cmd = text(ev)
                 log.debug('consuming {}'.format(cmd))
                 if cmd in ('ls', 'list'):
-                    asyncio.ensure_future(async_run_in_daemon_thread(self.socket.send_msg,list_files(),channel_name=Config.slack_channel,confirm=False))
+                    await self.send(list_files())
                 elif cmd == 'mand':
                     await self.fore.prepend(Command('mand',ev,self))
                     await self.fore.skip()

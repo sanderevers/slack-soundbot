@@ -29,7 +29,7 @@ def main():
         asyncio.get_event_loop().set_debug(True)
         warnings.simplefilter("always", ResourceWarning)
 
-    Bot().run()
+    asyncio.get_event_loop().run_until_complete(Bot().run())
 
 log = logging.getLogger(__package__)
 if __name__=='__main__':
