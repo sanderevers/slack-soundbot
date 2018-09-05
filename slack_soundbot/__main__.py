@@ -5,7 +5,7 @@ import yaml
 import asyncio
 import warnings
 
-from .soundbot import Bot
+from .bot import Bot
 from .config import Config
 
 def read_config(filename):
@@ -29,7 +29,7 @@ def main():
         asyncio.get_event_loop().set_debug(True)
         warnings.simplefilter("always", ResourceWarning)
 
-    asyncio.get_event_loop().run_until_complete(Bot().run())
+    asyncio.get_event_loop().run_until_complete(Bot()._run())
 
 log = logging.getLogger(__package__)
 if __name__=='__main__':
