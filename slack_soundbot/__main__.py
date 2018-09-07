@@ -26,6 +26,7 @@ def main():
 
     if Config.debug:
         logging.basicConfig(level=logging.DEBUG)
+        logging.getLogger('slacksocket').setLevel('INFO')
         asyncio.get_event_loop().set_debug(True)
         warnings.simplefilter("always", ResourceWarning)
 

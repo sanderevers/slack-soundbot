@@ -41,6 +41,7 @@ def list_files():
 
 class List(Process):
     def __init__(self,bot):
+        super().__init__()
         self.bot = bot
 
     async def _run(self):
@@ -48,6 +49,7 @@ class List(Process):
 
 class Mand(Process):
     def __init__(self, playq):
+        super().__init__()
         self.playq = playq
 
     async def _run(self):
@@ -56,6 +58,7 @@ class Mand(Process):
 
 class Play(Process):
     def __init__(self, sound, playq, event, bot, insert=False):
+        super().__init__()
         self.sound = sound
         self.playq = playq
         self.event = event
@@ -69,10 +72,13 @@ class Play(Process):
         else:
             await self.playq.append(playrun)
 
-        ret = await playrun.ended
-
+        # try:
+        ret = await playrun.result
         if self.event:
             await self.reply(ret)
+        # except Exception as e:
+        #     log.debug('Play cmd: {}'.format(e))
+
 
     async def reply(self, ret):
         emoji =\

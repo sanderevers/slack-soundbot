@@ -36,6 +36,7 @@ def process_outq_sync(socket,syncq):
 
 class Bot(Process):
     def __init__(self):
+        super().__init__()
         self.socket = SlackSocket(Config.api_key, translate=True)
         self.fore = PlayQ()
         self.back = PlayQ()
