@@ -18,7 +18,7 @@ class PlayRun(Process):
         self.filename = filename
 
     async def _run(self):
-        if self.filename=='mp3s/e.mp3':
+        if self.filename.endswith('/e.mp3'):
             raise Exception('aap')
         self.process = await asyncio.create_subprocess_exec(Config.play_cmd, self.filename)
         returncode = await self.process.wait()

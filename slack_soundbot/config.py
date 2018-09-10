@@ -3,4 +3,5 @@ class Config:
     slack_channel = None
     api_key = None
     debug = False
+    mp3dir = './mp3s'
 

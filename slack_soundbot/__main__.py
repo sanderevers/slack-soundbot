@@ -7,6 +7,9 @@ import warnings
 
 from .bot import Bot
 from .config import Config
+from .playhandler import PlayHandler
+from .listhandler import ListHandler
+from .uploadhandler import UploadHandler
 
 def read_config(filename):
     with open(filename) as f:
@@ -30,7 +33,7 @@ def main():
         asyncio.get_event_loop().set_debug(True)
         warnings.simplefilter("always", ResourceWarning)
 
-    asyncio.get_event_loop().run_until_complete(Bot()._run())
+    asyncio.get_event_loop().run_until_complete(Bot(Config, [ListHandler,PlayHandler,UploadHandler])._run())
 
 log = logging.getLogger(__package__)
 if __name__=='__main__':
