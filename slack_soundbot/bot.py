@@ -15,7 +15,7 @@ class Bot(Process):
     def __init__(self, config, handlerclasses):
         super().__init__()
         self.config = config
-        self.socket = SlackSocket(self.config.api_key, translate=True)
+        self.socket = SlackSocket(self.config.api_key)
         self.outq = janus.Queue()
         self.inq = janus.Queue()
         self.handlers = [cls(self) for cls in handlerclasses]

@@ -28,7 +28,7 @@ setup(
 
     keywords='slack jukebox soundboard bot',
     packages=find_packages(),
-    install_requires=['websocket-client==0.35.0','slacksocket','janus','pyyaml','requests'],
+    install_requires=['websocket-client==0.35.0','slacksocket==0.9.2','janus','pyyaml','requests'],
     # package_data={  # Optional
     #     'sample': ['package_data.dat'],
     # },
